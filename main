@@ -1,0 +1,220 @@
+#!/bin/bash
+
+function populate_namespaces_array () {
+    x=1
+    for line in $namespaces ;
+    do
+        namespacesArray[x]=$line
+        x=$((x+1))
+    done
+}
+
+function populate_secrets_array () {
+    x=1
+    for secret in $secrets ;
+    do
+        secretsArray[x]=$secret
+        x=$((x+1))
+    done
+}
+
+function bring_it_all_down () {
+    clear
+    echo "KILLING ALL CHILD PROCESSES..."
+    pkill -9 -g $parentPID
+    echo "DONE"
+    exit 0
+}
+
+function new_console () {
+    clear
+    echo "========================================================================"
+    echo "Mr-Clean will now provide a 'BASH' shell inside the Kubernetes cluster"
+    echo "Alpine with BASH, PSQL, NVIM, CURL, SSH, SSHPASS, PYTHON, "
+    echo "PIP, JQ pre-installed"
+    echo ""
+    echo "A few Alpine pointers:"
+    echo "  - 'apk add' is how stuff is installed"
+    echo "  - 'l' instead of 'ls'"
+    echo "  - 'nvim' instead pf 'vim' or 'vi'"
+    echo "========================================================================"
+    echo ""
+    echo ""
+    sleep 2
+    kubectl exec -it $podName -n $consoleNamespace -- bash 
+}
+
+function have_a_shufti () {
+    uri=$1
+    owner=$2
+    
+    clear
+    echo "====================================================================="
+    echo "Mr-Clean will now provide a 'PSQL' shell onto:"
+    echo "  - a database called, $owner"
+    echo "  - using credentials from a secret called, $chosenSecret"
+    echo "  - from the $chosenNamespace namespace"
+    echo ""
+    echo ""
+    echo "A few PSQL pointers:"
+    echo "  - \dt lists all tables"
+    echo "  - \? will show HELP"
+    echo "  - Syntax:"
+    echo "    - commands aren't case sensitive"
+    echo "    - entities are case sensitive and should always be in double quotes"
+    echo "    - all statements must end in a semi-colon"
+    echo '    e.g. select * from "Workshop";'
+    echo "====================================================================="
+    echo ""
+    echo ""
+    sleep 2
+    kubectl exec -it $podName -n $consoleNamespace -- psql $uri 
+}
+
+function clean_db () {
+    uri=$1
+    owner=$2
+    
+    clear
+    echo "====================================================================="
+    echo "Mr-Clean is about to go to work on:"
+    echo "  - a database called, $owner"
+    echo "  - using credentials from a secret called, $chosenSecret"
+    echo "  - from the $chosenNamespace namespace"
+    echo "====================================================================="
+    echo ""
+    echo ""
+    read -n 1 -p "ALL DATA WILL BE ERASED FROM THIS DATABASE. Are you sure you want to do this? (y/n) " areYouSure
+    case $areYouSure in
+        [yY] ) clear && kubectl exec $podName -n $consoleNamespace -- psql $uri -c 'drop owned by $owner;' && echo "Done" ;;
+        [nN] ) clear && echo "No databases have been touched" ;;
+        *) echo "invalid entry" ;;
+    esac
+}
+
+function decode_secret () {
+    uri=$(kubectl get $chosenSecret -n $chosenNamespace -o=jsonpath='{.data.uri}' | base64 --decode | sed -e 's/?&sslmode=require//')
+
+    # OSB sets db name as the same as the owner of all thats in it BUT the db itself is owned by a higher user
+    owner=$(kubectl get $chosenSecret -n $chosenNamespace -o=jsonpath='{.data.database}' | base64 --decode)
+    secret_option_menu $uri $owner
+}
+
+function secret_option_menu () {
+    uri=$1    
+    owner=$2
+    
+    clear
+    echo "--------------------------------------"
+    echo "     S H U F T I   or   C L E A N     "
+    echo "--------------------------------------"
+    echo ""
+    echo "1 - Shufti - Yorkshire for, 'have a look at'"
+    echo "2 - Clean"
+    echo ""
+    echo "q - EXIT"
+    echo ""
+    local choice
+    read -p "What would you like to do with the chosen database? " choice
+    case $choice in
+        1) have_a_shufti $uri $owner ;;
+        2) clean_db $uri $owner ;;
+        q) bring_it_all_down ;;
+        *) echo "Select a number from the list or press 'q' to exit" && sleep 2 && read_secrets_menu_options ;;
+    esac
+
+}
+
+function read_secrets_menu_options () {
+    local secretChoice
+    read -p "Select secret " secretChoice
+    chosenSecret=${secretsArray[$secretChoice]}
+    case $secretChoice in
+        $secretsOption ) decode_secret $chosenSecret ;;
+        c) new_console ;;
+        q) bring_it_all_down ;;
+        *) echo "Select a number from the list or press 'q' to exit" && sleep 2 && read_secrets_menu_options ;;
+    esac
+}
+
+function show_secrets_menu () {
+    secrets=$(kubectl get secret -o name -n $chosenNamespace | grep postgres | grep -v carama-postgres-db)
+    secretsArray=()
+    populate_secrets_array
+    secretsLen=${#secretsArray[@]}
+    if [ $secretsLen -lt 10 ]
+    then 
+        secretsOption=[1-$secretsLen]
+    else
+        lastDigit="${secretsLen: -1}"
+        secretsOption="[1-9] | 1[0-$lastDigit]"
+    fi
+    clear
+    echo "--------------------------------------"
+    echo "          D A T A B A S E S "
+    echo "--------------------------------------"
+    i=1
+    for secret in ${secretsArray[@]} ;
+    do
+        echo $i - $secret
+        i=$((i+1))
+    done
+    echo ""
+    echo "Other options:"
+    echo "c - Console - open a shell inside Kubernetes cluster"
+    echo ""
+    echo "q - EXIT"
+    echo ""
+    read_secrets_menu_options $podName
+}
+
+
+function show_menus () {
+    clear
+    echo "--------------------------------------"
+    echo "         N A M E S P A C E S"
+    echo "--------------------------------------"
+    i=1
+    for namespace in ${namespacesArray[@]} ;
+    do
+        echo $i - $namespace
+        i=$((i+1))
+    done
+    echo ""
+    echo "q - EXIT"
+    read_main_menu_options
+}
+
+function read_main_menu_options () {
+    local choice
+    read -p "Select namespace " choice
+    chosenNamespace=${namespacesArray[$choice]}
+    case $choice in
+        $option) show_secrets_menu ;;
+        q) bring_it_all_down ;;
+        *) echo "Select a number from the list or press 'q' to exit" && sleep 2
+    esac
+}
+
+
+# GLOBALS
+parentPID=$(ps -p $$ -o pgid=)
+serverPID=0
+
+namespaces=$(kubectl get ns | awk '{print $1}' | grep carama)
+namespacesArray=()
+populate_namespaces_array
+len=${#namespacesArray[@]}
+option=[1-$len]
+
+consoleNamespace="carama-private-ammar"
+consoleName="portaloo"
+podName=$(kubectl get pod -n $consoleNamespace -o custom-columns=:metadata.name | grep $consoleName)
+
+# RUN
+show_menus
+
+
+
+
+
