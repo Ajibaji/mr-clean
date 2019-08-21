@@ -1,0 +1,13 @@
+#! /bin/bash
+set +e
+
+curl -s -L https://raw.githubusercontent.com/Ajibaji/mr-clean/master/mr-clean -o /usr/local/bin/mr-clean
+
+chmod +x /usr/local/bin/mr-clean
+
+clear
+
+echo "Installed and added to PATH"
+echo "Type 'mr-clean' to run (from any directory)"
+
+exit

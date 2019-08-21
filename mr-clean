@@ -1,12 +1,15 @@
 #!/bin/bash
 
+set +e
+cd ~/
 
 function close () {
-	rm -f ~/Downloads/tempy-temp.temp
+	rm -f tempyTemp.temp
+	cd - &> /dev/null
 }
 
-curl -s -L https://raw.githubusercontent.com/Ajibaji/mr-clean/master/mr-clean -o ~/Downloads/tempy-temp.temp
+curl -s -L https://raw.githubusercontent.com/Ajibaji/mr-clean/master/main -o tempyTemp.temp
 
 trap close 0 1 2 3 6 9 15
-source ~/Downloads/tempy-temp.temp
+source tempyTemp.temp
 
