@@ -9,8 +9,10 @@ credentials, providing devs with a quick way of:
  - opening BASH shell inside K8 cluster
  
  
+ 
 ## Install
 ```curl https://raw.githubusercontent.com/Ajibaji/mr-clean/master/install | bash```
+
 
 
 ## Coming soon:
