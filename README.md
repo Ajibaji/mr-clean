@@ -2,6 +2,9 @@
 
 A little tool to aid development of Kubernetes based services. 
 
+## Install
+```curl https://raw.githubusercontent.com/Ajibaji/mr-clean/master/install | bash```
+
 Pulls and decodes K8 secrets in user selected namespaces, using ~/.kube/config 
 credentials, providing devs with a quick way of:
  - dropping database content from any IP
