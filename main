@@ -238,7 +238,7 @@ consoleName="portaloo"
 podName=$(kubectl get pod -n $consoleNamespace -o custom-columns=:metadata.name | grep $consoleName)
 
 # RUN
-while getopts n:yr option
+while getopts n:yrh option
 do
     case "${option}" in
         n) chosenNamespace=${OPTARG};;
