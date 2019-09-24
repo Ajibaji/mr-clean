@@ -42,6 +42,7 @@ function new_console () {
     echo ""
     sleep 2
     kubectl exec -it $podName -n $consoleNamespace -- bash
+    bring_it_all_down
 }
 
 function have_a_shufti () {
@@ -69,6 +70,7 @@ function have_a_shufti () {
     echo ""
     sleep 2
     kubectl exec -it $podName -n $consoleNamespace -- psql $uri
+    bring_it_all_down
 }
 
 function clean_db () {
