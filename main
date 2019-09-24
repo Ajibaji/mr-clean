@@ -41,13 +41,13 @@ function new_console () {
     echo ""
     echo ""
     sleep 2
-    kubectl exec -it $podName -n $consoleNamespace -- bash 
+    kubectl exec -it $podName -n $consoleNamespace -- bash
 }
 
 function have_a_shufti () {
     uri=$1
     owner=$2
-    
+
     clear
     echo "====================================================================="
     echo "Mr-Clean will now provide a 'PSQL' shell onto:"
@@ -68,28 +68,33 @@ function have_a_shufti () {
     echo ""
     echo ""
     sleep 2
-    kubectl exec -it $podName -n $consoleNamespace -- psql $uri 
+    kubectl exec -it $podName -n $consoleNamespace -- psql $uri
 }
 
 function clean_db () {
     uri=$1
     owner=$2
-    
-    clear
-    echo "====================================================================="
-    echo "Mr-Clean is about to go to work on:"
-    echo "  - a database called, $owner"
-    echo "  - using credentials from a secret called, $chosenSecret"
-    echo "  - from the $chosenNamespace namespace"
-    echo "====================================================================="
-    echo ""
-    echo ""
-    read -n 1 -p "ALL DATA WILL BE ERASED FROM THIS DATABASE. Are you sure you want to do this? (y/n) " areYouSure
-    case $areYouSure in
-        [yY] ) clear && kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;" && echo "Done" ;;
-        [nN] ) clear && echo "No databases have been touched" ;;
-        *) echo "invalid entry" ;;
-    esac
+
+    if [ $unattended = "true" ]
+    then
+        kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;"
+    else
+        clear
+        echo "====================================================================="
+        echo "Mr-Clean is about to go to work on:"
+        echo "  - a database called, $owner"
+        echo "  - using credentials from a secret called, $chosenSecret"
+        echo "  - from the $chosenNamespace namespace"
+        echo "====================================================================="
+        echo ""
+        echo ""
+        read -n 1 -p "ALL DATA WILL BE ERASED FROM THIS DATABASE. Are you sure you want to do this? (y/n) " areYouSure
+        case $areYouSure in
+            [yY] ) clear && kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;" && echo "Done" ;;
+            [nN] ) clear && echo "No databases have been touched" ;;
+            *) echo "invalid entry" ;;
+        esac
+    fi
 }
 
 function decode_secret () {
@@ -97,13 +102,19 @@ function decode_secret () {
 
     # OSB sets db name as the same as the owner of all thats in it BUT the db itself is owned by a higher user
     owner=$(kubectl get $chosenSecret -n $chosenNamespace -o=jsonpath='{.data.database}' | base64 --decode)
-    secret_option_menu $uri $owner
+
+    if [ $unattended = "true" ]
+    then
+        clean_db $uri $owner
+    else
+        secret_option_menu $uri $owner
+    fi
 }
 
 function secret_option_menu () {
-    uri=$1    
+    uri=$1
     owner=$2
-    
+
     clear
     echo "--------------------------------------"
     echo "     S H U F T I   or   C L E A N     "
@@ -141,31 +152,43 @@ function show_secrets_menu () {
     secrets=$(kubectl get secret -o name -n $chosenNamespace | grep postgres | grep -v carama-postgres-db)
     secretsArray=()
     populate_secrets_array
-    secretsLen=${#secretsArray[@]}
-    if [ $secretsLen -lt 10 ]
-    then 
-        secretsOption=[1-$secretsLen]
+
+    if [ $unattended = "true" ]
+    then
+        for secret in ${secretsArray[@]} ;
+        do
+            chosenSecret=$secret
+            decode_secret $chosenSecret
+        done
     else
-        lastDigit="${secretsLen: -1}"
-        secretsOption="[1-9] | 1[0-$lastDigit]"
+        secretsLen=${#secretsArray[@]}
+        if [ $secretsLen -lt 10 ]
+        then
+            secretsOption=[1-$secretsLen]
+        else
+            lastDigit="${secretsLen: -1}"
+            secretsOption="[1-9] | 1[0-$lastDigit]"
+        fi
+        clear
+        echo "--------------------------------------"
+        echo "          D A T A B A S E S "
+        echo "--------------------------------------"
+        i=1
+        for secret in ${secretsArray[@]} ;
+        do
+            echo $i - $secret
+            i=$((i+1))
+        done
+        echo ""
+        echo "Other options:"
+        echo "c - Console - open a shell inside Kubernetes cluster"
+        echo ""
+        echo "q - EXIT"
+        echo ""
+        read_secrets_menu_options $podName
     fi
-    clear
-    echo "--------------------------------------"
-    echo "          D A T A B A S E S "
-    echo "--------------------------------------"
-    i=1
-    for secret in ${secretsArray[@]} ;
-    do
-        echo $i - $secret
-        i=$((i+1))
-    done
-    echo ""
-    echo "Other options:"
-    echo "c - Console - open a shell inside Kubernetes cluster"
-    echo ""
-    echo "q - EXIT"
-    echo ""
-    read_secrets_menu_options $podName
+
+
 }
 
 
@@ -190,8 +213,8 @@ function read_main_menu_options () {
     read -p "Select namespace " choice
     chosenNamespace=${namespacesArray[$choice]}
     case $choice in
-        $option) show_secrets_menu ;;
         q) bring_it_all_down ;;
+        $option) show_secrets_menu ;;
         *) echo "Select a number from the list or press 'q' to exit" && sleep 2
     esac
 }
@@ -200,6 +223,9 @@ function read_main_menu_options () {
 # GLOBALS
 parentPID=$(ps -p $$ -o pgid=)
 serverPID=0
+unattended="false"
+reset_all_dbs="false"
+say_yes="false"
 
 namespaces=$(kubectl get ns | awk '{print $1}' | grep carama)
 namespacesArray=()
@@ -212,9 +238,26 @@ consoleName="portaloo"
 podName=$(kubectl get pod -n $consoleNamespace -o custom-columns=:metadata.name | grep $consoleName)
 
 # RUN
-show_menus
+while getopts n:yr option
+do
+    case "${option}" in
+        n) chosenNamespace=${OPTARG};;
+        r) reset_all_dbs="true";;
+        y) say_yes="true";;
+        h) echo "-n <NAMESPACE>, -r reset all databases -y automatically answer 'yes' when asked"
+    esac
+done
 
+echo "chosenNamespace: $chosenNamespace"
+echo "reset: $reset_all_dbs"
+echo "yes: $say_yes"
+echo ""
 
-
-
-
+if [[ ( ! -z "$chosenNamespace" ) && ( $reset_all_dbs = "true" ) && ( $say_yes = "true" ) ]]
+then
+    echo "Deleting EVERYTHING in ALL databases associated with $chosenNamespace environment. Script will exit when done"
+    unattended="true"
+    show_secrets_menu
+else
+    show_menus
+fi
