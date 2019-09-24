@@ -244,7 +244,7 @@ do
         n) chosenNamespace=${OPTARG};;
         r) reset_all_dbs="true";;
         y) say_yes="true";;
-        h) echo "-n <NAMESPACE>, -r reset all databases -y automatically answer 'yes' when asked" && EXIT
+        h) echo "-n <NAMESPACE>, -r reset all databases -y automatically answer 'yes' when asked" && exit
     esac
 done
 
