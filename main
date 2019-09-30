@@ -229,12 +229,6 @@ unattended="false"
 reset_all_dbs="false"
 say_yes="false"
 
-namespaces=$(kubectl get ns | awk '{print $1}' | grep carama)
-namespacesArray=()
-populate_namespaces_array
-len=${#namespacesArray[@]}
-option=[1-$len]
-
 consoleNamespace="carama-private-ammar"
 consoleName="portaloo"
 podName=$(kubectl get pod -n $consoleNamespace -o custom-columns=:metadata.name | grep $consoleName)
@@ -261,5 +255,10 @@ then
     unattended="true"
     show_secrets_menu
 else
+    namespaces=$(kubectl get ns | awk '{print $1}' | grep carama)
+    namespacesArray=()
+    populate_namespaces_array
+    len=${#namespacesArray[@]}
+    option=[1-$len]
     show_menus
 fi
