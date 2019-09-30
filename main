@@ -29,7 +29,7 @@ function bring_it_all_down () {
 function new_console () {
     clear
     echo "========================================================================"
-    echo "Mr-Clean will now provide a 'BASH' shell inside the Kubernetes cluster"
+    echo "Mr-Clean will now provide a 'BASH' shell inside the chosen Namespace"
     echo "Alpine with BASH, PSQL, NVIM, CURL, SSH, SSHPASS, PYTHON, "
     echo "PIP, JQ pre-installed"
     echo ""
@@ -41,7 +41,8 @@ function new_console () {
     echo ""
     echo ""
     sleep 2
-    kubectl exec -it $podName -n $consoleNamespace -- bash
+    kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- bash
+    #kubectl exec -it $podName -n $consoleNamespace -- bash
     bring_it_all_down
 }
 
@@ -69,7 +70,9 @@ function have_a_shufti () {
     echo ""
     echo ""
     sleep 2
-    kubectl exec -it $podName -n $consoleNamespace -- psql $uri
+    kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri
+
+    #kubectl exec -it $podName -n $consoleNamespace -- psql $uri
     bring_it_all_down
 }
 
@@ -79,7 +82,8 @@ function clean_db () {
 
     if [ $unattended = "true" ]
     then
-        kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;"
+        kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;"
+        #kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;"
     else
         clear
         echo "====================================================================="
@@ -92,7 +96,8 @@ function clean_db () {
         echo ""
         read -n 1 -p "ALL DATA WILL BE ERASED FROM THIS DATABASE. Are you sure you want to do this? (y/n) " areYouSure
         case $areYouSure in
-            [yY] ) clear && kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;" && echo "Done" ;;
+            [yY] ) clear && kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;"
+            #[yY] ) clear && kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;" && echo "Done" ;;
             [nN] ) clear && echo "No databases have been touched" ;;
             *) echo "invalid entry" ;;
         esac
@@ -187,7 +192,7 @@ function show_secrets_menu () {
         echo ""
         echo "q - EXIT"
         echo ""
-        read_secrets_menu_options $podName
+        read_secrets_menu_options
     fi
 
 
@@ -229,9 +234,10 @@ unattended="false"
 reset_all_dbs="false"
 say_yes="false"
 
-consoleNamespace="carama-private-ammar"
-consoleName="portaloo"
-podName=$(kubectl get pod -n $consoleNamespace -o custom-columns=:metadata.name | grep $consoleName)
+#consoleNamespace="carama-private-ammar"
+consoleImage="persiancookbook/portaloo:1.3"
+#consoleName="portaloo"
+#podName=$(kubectl get pod -n $consoleNamespace -o custom-columns=:metadata.name | grep $consoleName)
 
 # RUN
 while getopts n:yrh option
