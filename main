@@ -96,7 +96,7 @@ function clean_db () {
         echo ""
         read -n 1 -p "ALL DATA WILL BE ERASED FROM THIS DATABASE. Are you sure you want to do this? (y/n) " areYouSure
         case $areYouSure in
-            [yY] ) clear && kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;"
+            [yY] ) clear && kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;" ;;
             #[yY] ) clear && kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;" && echo "Done" ;;
             [nN] ) clear && echo "No databases have been touched" ;;
             *) echo "invalid entry" ;;
