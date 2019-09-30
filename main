@@ -82,7 +82,7 @@ function clean_db () {
 
     if [ $unattended = "true" ]
     then
-        kubectl run --generator=run-pod/v1 console$RANDOM --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;"
+        kubectl run --generator=run-pod/v1 console$RANDOM --rm --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;"
         #kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;"
     else
         clear
