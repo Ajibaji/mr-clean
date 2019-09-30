@@ -41,7 +41,7 @@ function new_console () {
     echo ""
     echo ""
     sleep 2
-    kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- bash
+    kubectl run --generator=run-pod/v1 console$RANDOM --rm -i --tty --image $consoleImage -n $chosenNamespace -- bash
     #kubectl exec -it $podName -n $consoleNamespace -- bash
     bring_it_all_down
 }
@@ -70,7 +70,7 @@ function have_a_shufti () {
     echo ""
     echo ""
     sleep 2
-    kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri
+    kubectl run --generator=run-pod/v1 console$RANDOM --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri
 
     #kubectl exec -it $podName -n $consoleNamespace -- psql $uri
     bring_it_all_down
@@ -82,7 +82,7 @@ function clean_db () {
 
     if [ $unattended = "true" ]
     then
-        kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;"
+        kubectl run --generator=run-pod/v1 console$RANDOM --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;"
         #kubectl exec $podName -n $consoleNamespace -- psql $uri -c "drop owned by $owner;"
     else
         clear
@@ -96,7 +96,7 @@ function clean_db () {
         echo ""
         read -n 1 -p "ALL DATA WILL BE ERASED FROM THIS DATABASE. Are you sure you want to do this? (y/n) " areYouSure
         case $areYouSure in
-            [yY] ) clear && kubectl run console --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;" ;;
+            [yY] ) clear && kubectl run --generator=run-pod/v1 console$RANDOM --rm -i --tty --image $consoleImage -n $chosenNamespace -- psql $uri -c "drop owned by $owner;" ;;
             [nN] ) clear && echo "No databases have been touched" ;;
             *) echo "invalid entry" ;;
         esac
