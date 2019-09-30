@@ -164,8 +164,9 @@ function show_secrets_menu () {
         for secret in ${secretsArray[@]} ;
         do
             chosenSecret=$secret
-            decode_secret $chosenSecret
+            decode_secret $chosenSecret &
         done
+        wait
     else
         secretsLen=${#secretsArray[@]}
         if [ $secretsLen -lt 10 ]
