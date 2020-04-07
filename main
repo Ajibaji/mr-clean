@@ -127,7 +127,8 @@ function secret_option_menu () {
     echo "--------------------------------------"
     echo ""
     echo "1 - Shufti - Yorkshire for, 'have a look at'"
-    echo "2 - Clean"
+    echo ""
+    echo "0 - Clean"
     echo ""
     echo "q - EXIT"
     echo ""
@@ -135,7 +136,7 @@ function secret_option_menu () {
     read -p "What would you like to do with the chosen database? " choice
     case $choice in
         1) have_a_shufti $uri $owner ;;
-        2) clean_db $uri $owner ;;
+        0) clean_db $uri $owner ;;
         q) bring_it_all_down ;;
         *) echo "Select a number from the list or press 'q' to exit" && sleep 2 && read_secrets_menu_options ;;
     esac
