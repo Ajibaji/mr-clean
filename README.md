@@ -1,15 +1,15 @@
 # Mr-Clean
 
-A little tool to aid development of Kubernetes based services. 
+A little tool to aid development of Kubernetes based services.
 
-Pulls and decodes K8 secrets in user selected namespaces, using ~/.kube/config 
-credentials, providing devs with a quick way of:
- - dropping database content from any IP
- - opening PSQL shell into a selected database
- - opening BASH shell inside K8 cluster
- 
- 
- 
+Pulls and decodes K8s secrets in user selected namespaces, using `~/.kube/config`
+credentials, providing devs with a convenient way of:
+ - opening a BASH shell inside K8s cluster
+ - opening a PSQL shell into a selected database from within the target namespace
+ - dropping postgres database content inside the K8s cluster from any IP
+
+Mr-Clean is auto-updating
+
 ## Install
 ```curl https://raw.githubusercontent.com/Ajibaji/mr-clean/master/install | bash```
 

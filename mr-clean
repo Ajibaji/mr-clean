@@ -12,4 +12,3 @@ curl -s -L https://raw.githubusercontent.com/Ajibaji/mr-clean/master/main -o tem
 
 trap close 0 1 2 3 6 9 15
 source tempyTemp.temp
-
